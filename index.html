@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0e1418">
+<meta name="description" content="Breathing trainer for freediving CO2 and O2 tables and rhythmic breathing patterns, with audio cues that keep running in the background.">
+<title>Breath Trainer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230e1418%27/%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2718%27 fill=%27none%27 stroke=%27%2335c4a6%27 stroke-width=%276%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css?v=30">
+</head>
+<body>
+
+<audio id="audio" preload="auto"><source id="audio-source" type="audio/wav"></audio>
+
+<header class="topbar">
+  <div class="brand">Breath Trainer</div>
+  <nav>
+    <button type="button" id="nav-setup" class="link">Train</button>
+    <button type="button" id="nav-history" class="link">History</button>
+    <button type="button" id="nav-settings" class="link">Settings</button>
+  </nav>
+</header>
+
+<main>
+
+<section id="view-setup" class="view" tabindex="-1">
+  <div id="tip" class="card tip" hidden>
+    <h2 class="card-title">How it works</h2>
+    <p>Pick a preset, tap Start, then put the phone down or lock it: the tones keep playing. With the classic beeps a long low tone means hold, two rising notes mean breathe and three ticks count down the last seconds; Hear the cues plays each sound. On iPhone use a Safari tab, not a Home Screen app, and do not mute the tab.</p>
+    <div class="row">
+      <button type="button" id="btn-tip-guide" class="btn">Hear the cues</button>
+      <button type="button" id="btn-tip-ok" class="btn primary">Got it</button>
+    </div>
+  </div>
+  <p id="standalone-note" class="warn" hidden>This is running as a Home Screen app, where iOS stops the cues when the screen locks. For reliable audio open the page in a Safari tab instead.</p>
+  <div id="mode-list" class="modes" role="group" aria-label="Preset"></div>
+
+  <form id="config-form" class="card" autocomplete="off"></form>
+
+  <div class="setup-side">
+  <section class="card">
+    <h2 class="card-title">Preview</h2>
+    <div id="preview"></div>
+  </section>
+
+  <p id="setup-note" class="error" aria-live="polite" hidden></p>
+  <p id="setup-info" class="info" hidden></p>
+  <div id="setup-coach" class="coach" hidden>
+    <p id="coach-text"></p>
+    <button type="button" id="btn-coach-apply" class="btn" aria-describedby="coach-text">Apply</button>
+  </div>
+
+  <div class="actions">
+    <button type="button" id="btn-start" class="btn primary big">Start</button>
+  </div>
+
+  <div class="row wrap secondary">
+    <button type="button" id="btn-save-preset" class="btn">Save as preset</button>
+    <button type="button" id="btn-reset-preset" class="btn">Reset to default</button>
+    <button type="button" id="btn-share" class="btn">Share link</button>
+    <button type="button" id="btn-delete-preset" class="btn danger" hidden>Delete preset</button>
+  </div>
+
+  <div id="share-row" class="share-row" hidden>
+    <input type="text" id="share-url" readonly aria-label="Link to this preset">
+    <div class="row">
+      <button type="button" id="btn-share-native" class="btn primary">Share</button>
+      <button type="button" id="btn-share-copy" class="btn">Copy</button>
+      <button type="button" id="btn-share-close" class="btn">Close</button>
+    </div>
+    <p class="hint">Anyone opening the link gets this preset added to their own list; a full session brings its parts along.</p>
+  </div>
+
+  <div id="save-row" class="row save-row" hidden>
+    <input type="text" id="preset-name" placeholder="Preset name" maxlength="40" aria-label="Preset name">
+    <button type="button" id="btn-save-confirm" class="btn primary">Save</button>
+    <button type="button" id="btn-save-cancel" class="btn">Cancel</button>
+  </div>
+  </div>
+
+  <p class="safety">
+    Dry training only. Never practice breath-holds in or near water without a trained buddy watching you.
+    Stop immediately if you feel dizzy or unwell. This app is not medical advice.
+  </p>
+</section>
+
+<section id="view-session" class="view session" hidden data-kind="prep" tabindex="-1">
+  <div id="bubbles" class="bubbles" aria-hidden="true"></div>
+  <div class="session-top">
+    <div id="s-mode" class="s-mode"></div>
+    <div id="s-round" class="s-round"></div>
+  </div>
+  <div class="session-main">
+    <div class="dial">
+      <div id="s-ring" class="ring" aria-hidden="true"></div>
+      <div id="s-ripple" class="ripple" aria-hidden="true"></div>
+      <div id="s-phase" class="s-phase" aria-live="polite"></div>
+      <div id="s-time" class="s-time">0:00</div>
+    </div>
+    <div class="session-info">
+      <div class="progress" aria-hidden="true"><div id="s-bar" class="bar"></div></div>
+      <div id="s-next" class="s-next"></div>
+      <div id="s-pips" class="pips" aria-hidden="true"></div>
+    </div>
+  </div>
+  <div class="session-bottom">
+    <div id="s-remaining" class="s-remaining"></div>
+    <div class="row">
+      <button type="button" id="btn-prev" class="btn">Back</button>
+      <button type="button" id="btn-pause" class="btn">Pause</button>
+      <button type="button" id="btn-skip" class="btn">Skip</button>
+      <button type="button" id="btn-urge" class="btn" hidden>Urge</button>
+      <button type="button" id="btn-stop" class="btn danger">Stop</button>
+    </div>
+    <p id="s-note" class="muted small" aria-live="polite"></p>
+    <p class="kbd-hint muted small">Space pauses, arrow keys move between segments, U marks the urge, Escape stops</p>
+  </div>
+</section>
+
+<section id="view-done" class="view done" hidden tabindex="-1">
+  <div id="done-bubbles" class="bubbles" aria-hidden="true"></div>
+  <div class="card">
+    <h2 class="card-title">Session complete</h2>
+    <dl id="done-summary" class="summary"></dl>
+    <div id="done-rate" class="rate" role="group" aria-label="How did it feel">
+      <span>How did it feel?</span>
+      <div class="row">
+        <button type="button" class="btn" data-rating="easy">Easy</button>
+        <button type="button" class="btn" data-rating="ok">OK</button>
+        <button type="button" class="btn" data-rating="hard">Hard</button>
+      </div>
+    </div>
+    <div class="row">
+      <button type="button" id="btn-again" class="btn primary">Again</button>
+      <button type="button" id="btn-share-result" class="btn">Share</button>
+      <button type="button" id="btn-back" class="btn">Back</button>
+    </div>
+  </div>
+</section>
+
+<section id="view-history" class="view" hidden tabindex="-1">
+  <div class="card">
+    <h2 class="card-title">Last 7 days</h2>
+    <div id="hist-stats" class="stats"></div>
+    <div id="hist-chart" class="chart" role="img" aria-label="Minutes trained per day over the last two weeks"></div>
+    <p id="hist-alltime" class="hint"></p>
+  </div>
+  <div class="card" id="hist-attempts-card">
+    <h2 class="card-title">Static attempts</h2>
+    <div id="hist-attempts" class="chart attempts" role="img" aria-label="Hold time of recent max static attempts"></div>
+    <p id="hist-best" class="hint"></p>
+  </div>
+  <div class="card" id="hist-presets-card">
+    <h2 class="card-title">By preset</h2>
+    <div id="hist-presets"></div>
+  </div>
+  <div class="card">
+    <h2 class="card-title">Sessions</h2>
+    <div id="hist-list"></div>
+  </div>
+  <div class="actions row wrap">
+    <button type="button" id="btn-export-csv" class="btn">Export CSV</button>
+    <button type="button" id="btn-clear-history" class="btn danger">Clear history</button>
+  </div>
+</section>
+
+<section id="view-settings" class="view" hidden tabindex="-1">
+  <div class="card">
+    <h2 class="card-title">Settings</h2>
+    <div class="field">
+      <label for="set-volume">Cue volume</label>
+      <div class="control">
+        <input type="range" id="set-volume" min="0.1" max="1" step="0.05">
+        <button type="button" id="btn-test-tone" class="btn">Test</button>
+      </div>
+      <p class="hint">Baked into the session audio. On iPhone the hardware buttons set the final level.</p>
+    </div>
+    <div class="field">
+      <label for="set-tones">Cue sound</label>
+      <select id="set-tones"></select>
+      <p class="hint">Tap Test to hear breathe, hold and a countdown tick in the chosen sound.</p>
+    </div>
+    <div class="field">
+      <label class="toggle">
+        <span>Countdown ticks (3-2-1) before a segment ends</span>
+        <input type="checkbox" id="set-countdown">
+      </label>
+      <p class="hint">Before get-ready, breathe and hold segments of 8 s or more, and before pattern phases of 10 s or more.</p>
+    </div>
+    <div class="field">
+      <label for="set-holdticks">Ticks during holds</label>
+      <select id="set-holdticks">
+        <option value="0">Off</option>
+        <option value="15">Every 15 s</option>
+        <option value="30">Every 30 s</option>
+        <option value="60">Every 60 s</option>
+      </select>
+      <p class="hint">A quiet tick so you can follow a hold with your eyes closed. A max static attempt always ticks, every 30 s when this is off.</p>
+    </div>
+    <div class="field">
+      <label class="toggle">
+        <span>Keep the screen awake during a session</span>
+        <input type="checkbox" id="set-wakelock">
+      </label>
+      <p class="hint">Needs https and a browser with the wake lock feature; the switch is off when it is missing.</p>
+    </div>
+    <div class="field">
+      <label class="toggle">
+        <span>Vibrate on cues</span>
+        <input type="checkbox" id="set-vibrate">
+      </label>
+      <p class="hint">Short buzz at each segment change while the screen is on. Android only; iPhone browsers have no vibration.</p>
+    </div>
+    <div class="field">
+      <label class="toggle">
+        <span>Mix with other apps</span>
+        <input type="checkbox" id="set-mix">
+      </label>
+      <p class="hint">Music from other apps keeps playing and dips for each cue. Cues stop when the screen locks or you leave Safari, and the ringer switch mutes them. Needs Safari on iOS 17 or later.</p>
+    </div>
+    <div class="field">
+      <label for="set-goal">Weekly goal</label>
+      <select id="set-goal">
+        <option value="0">Off</option>
+        <option value="30">30 min a week</option>
+        <option value="60">1 hour a week</option>
+        <option value="120">2 hours a week</option>
+        <option value="180">3 hours a week</option>
+        <option value="300">5 hours a week</option>
+      </select>
+      <p class="hint">Shown as progress on the History tab.</p>
+    </div>
+    <div class="field">
+      <label for="set-theme">Theme</label>
+      <select id="set-theme">
+        <option value="system">Follow system</option>
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Cue guide</h2>
+    <p class="hint">Learn the sounds so you can train with your eyes closed. Each plays in the cue sound chosen above.</p>
+    <div id="cue-guide" class="guide"></div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Background audio on iPhone</h2>
+    <p>
+      The whole session is rendered to one audio track when you tap Start, so the cues keep playing
+      when the screen is locked or you switch apps. Use the page in a Safari tab rather than as a
+      Home Screen app, do not mute the tab, and leave the session playing. Lock-screen play and pause
+      controls work. Cues play even when the ringer switch is on silent. Starting a session pauses music
+      from other apps; turn on Mix with other apps to keep the music playing instead.
+    </p>
+    <p>
+      Settings, presets and history are stored only in this browser. Nothing is sent anywhere.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Backup</h2>
+    <p class="hint">Settings, presets and history live only in this browser. Export a file to move them to another device or keep them safe; importing replaces settings and presets and merges the history.</p>
+    <div class="row">
+      <button type="button" id="btn-export" class="btn">Export file</button>
+      <button type="button" id="btn-import" class="btn">Import file</button>
+    </div>
+    <input type="file" id="import-file" accept=".json,application/json" hidden>
+    <p id="backup-note" class="hint" aria-live="polite"></p>
+  </div>
+
+  <div class="actions">
+    <button type="button" id="btn-reset-all" class="btn danger">Reset all settings and presets</button>
+  </div>
+  <p class="hint version">Breath Trainer, build 30</p>
+</section>
+
+</main>
+
+<script src="js/presets.js?v=30"></script>
+<script src="js/schedule.js?v=30"></script>
+<script src="js/tones.js?v=30"></script>
+<script src="js/storage.js?v=30"></script>
+<script src="js/log.js?v=30"></script>
+<script src="js/player.js?v=30"></script>
+<script src="js/state.js?v=30"></script>
+<script src="js/ui.js?v=30"></script>
+<script src="js/setup.js?v=30"></script>
+<script src="js/actions.js?v=30"></script>
+<script src="js/session.js?v=30"></script>
+<script src="js/done.js?v=30"></script>
+<script src="js/history.js?v=30"></script>
+<script src="js/settings.js?v=30"></script>
+<script src="js/app.js?v=30"></script>
+</body>
+</html>
